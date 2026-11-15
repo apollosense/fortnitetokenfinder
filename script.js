@@ -12,17 +12,19 @@ const LOOT = [
 const P_TOKEN = 1 / 137500;
 const GIZMOS = ['Portable Extractor', 'Extraction Accelerator', 'Sprite Locator', 'Lucky Locator', 'Golden Firework'];
 
-// weekly pool, rotates sundays 9pm ET (02:00 UTC monday)
+// weekly pool, rotates sundays 9am ET (14:00 UTC)
 const WEEKS = [
   { n: 1, start: '2026-11-01T00:00:00Z', items: {
     gold: 'Solid Gold A$AP Rocky', vehicle: "Mercedes-AMG G 63 'G-Wagon' + Golden Llama Crew decal",
     pickaxe: "Solid Gold A$AP Rocky's Gauntlets", jam: "'No Trespassing' by A$AP Rocky", loading: 'Plunder in Paradise' }, slot: 'Pickaxe' },
-  { n: 2, start: '2026-11-09T02:00:00Z', items: {
+  { n: 2, start: '2026-11-08T14:00:00Z', items: {
     gold: "Solid Gold Lil' Uzi Vert", vehicle: 'Cadillac CT5-V Blackwing + Golden Llama Crew decal',
     pickaxe: 'Diamond and Gold', jam: "'London' by Lil' Uzi Vert", loading: 'So Kawaii' }, slot: 'Back Bling' },
-  { n: 3, start: '2026-11-16T02:00:00Z', items: null },
-  { n: 4, start: '2026-11-23T02:00:00Z', items: null },
-  { n: 5, start: '2026-11-30T02:00:00Z', items: null },
+  { n: 3, start: '2026-11-15T14:00:00Z', items: {
+    gold: 'Solid Gold Miku', vehicle: 'Gold Chevrolet Corvette ZR1 + wheels',
+    pickaxe: "Miku's Takarabako", jam: "'PPPP'", loading: 'May Fortune Find You' }, slot: 'Back Bling' },
+  { n: 4, start: '2026-11-22T14:00:00Z', items: null },
+  { n: 5, start: '2026-11-29T14:00:00Z', items: null },
 ];
 const TYPES = { gold: 'Outfit', vehicle: 'Vehicle', pickaxe: 'Pickaxe / Back Bling', jam: 'Jam Track', loading: 'Loading Screen', token: 'Item Shop token', sprite: 'Gizmo' };
 const now = Date.now();

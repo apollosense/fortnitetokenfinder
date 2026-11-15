@@ -17,7 +17,7 @@ odds per chest (treasure hunters):
 
 cosmetics + the token are one time, u cant get dupes. only gizmos stack
 
-has the real items for each week (week 1 a$ap rocky, week 2 lil uzi). picks the current week automatically
+has the real items for each week (week 1 a$ap rocky, week 2 lil uzi, week 3 miku). picks the current week automatically
 
 space to open, A for auto. progress saves in ur browser
 
