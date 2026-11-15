@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pirate Token Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #ffffff; --fg: #0a0a0a; --mute: #8a8a8a; --line: #e4e4e4; --soft: #f5f5f5; }
+  body.token { --bg: #ffd400; --fg: #0a0a0a; --mute: #6b5a00; --line: #e0bb00; --soft: #ffe14d; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', sans-serif; transition: background .5s, color .5s; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; border-bottom: 2px solid var(--fg); padding-bottom: 14px; }
+  header h1 { font-size: 30px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
+  header p { color: var(--mute); font-size: 13px; margin-top: 2px; }
+  .stats { display: flex; gap: 26px; }
+  .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--mute); }
+  .stat .v { font-size: 22px; font-weight: 700; }
+
+  .main { display: grid; grid-template-columns: 1fr 1.25fr; gap: 28px; margin-top: 26px; }
+  @media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+  .box { border: 2px solid var(--fg); padding: 20px; transition: border-color .5s; }
+  .box h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; display: flex; justify-content: space-between; }
+  .box h2 span { color: var(--mute); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12px; }
+
+  .chest-area { text-align: center; }
+  #chest { width: 190px; height: 170px; margin: 6px auto 0; display: block; cursor: pointer; }
+  #chest .lid { transform-origin: 30px 72px; transition: transform .25s cubic-bezier(.3,1.6,.5,1); }
+  #chest.open .lid { transform: rotate(-28deg) translate(-6px, -10px); }
+  #chest.shake { animation: shake .25s; }
+  @keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+  #chest path, #chest rect, #chest line, #chest circle { stroke: var(--fg); }
+  #result { min-height: 64px; margin-top: 10px; }
+  #result .name { font-size: 22px; font-weight: 900; letter-spacing: -.5px; }
+  #result .sub { font-size: 12px; color: var(--mute); margin-top: 3px; }
+  #result.pop .name { animation: pop .3s; }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } }
+
+  button { font-family: inherit; cursor: pointer; border: 2px solid var(--fg); background: var(--bg); color: var(--fg); padding: 10px 14px; font-weight: 700; font-size: 13px; transition: background .15s, color .15s; }
+  button:hover { background: var(--fg); color: var(--bg); }
+  button.primary { background: var(--fg); color: var(--bg); font-size: 16px; padding: 14px; width: 100%; margin-top: 12px; }
+  button.primary:hover { opacity: .85; }
+  button.on { background: var(--fg); color: var(--bg); }
+  .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .row > * { flex: 1; }
+  .hint { font-size: 11px; color: var(--mute); margin-top: 8px; }
+  label.check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 12px; cursor: pointer; }
+  label.check input { accent-color: var(--fg); width: 16px; height: 16px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--mute); font-weight: 500; padding: 0 6px 8px; border-bottom: 1px solid var(--fg); }
+  td { padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  td.n, th.n { text-align: right; }
+  tr.got td:first-child { font-weight: 700; }
+  tr.token td:first-child::after { content: ' ★'; }
+  .dot { display: inline-block; width: 8px; height: 8px; border: 1.5px solid var(--fg); border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+  tr.got .dot { background: var(--fg); }
+
+  .luck { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .luck div { background: var(--soft); padding: 12px; transition: background .5s; }
+  .luck .k { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: 1px; }
+  .luck .v { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+  #log { list-style: none; max-height: 260px; overflow: auto; font-size: 12px; }
+  #log li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  #log li b { font-weight: 700; }
+  #log li .mono { color: var(--mute); }
+  #log li.tk { font-weight: 900; }
+
+  #banner { display: none; margin-top: 26px; border: 3px solid var(--fg); padding: 22px; text-align: center; }
+  body.token #banner { display: block; animation: pop .4s; }
+  #banner .big { font-size: 46px; font-weight: 900; letter-spacing: -2px; text-transform: uppercase; }
+  #banner p { margin-top: 6px; font-size: 14px; }
+  #banner button { margin-top: 14px; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--fg); color: var(--bg); padding: 10px 18px; font-size: 13px; font-weight: 700; transition: .25s; pointer-events: none; z-index: 10; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  footer { margin-top: 30px; font-size: 11px; color: var(--mute); }
+  kbd { font-family: 'JetBrains Mono'; border: 1px solid var(--fg); padding: 0 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pirate Token Simulator</h1>
+      <p>Every chest is one roll at the weekly loot table.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Chests</div><div class="v mono" id="sOpened">0</div></div>
+      <div class="stat"><div class="k">Finds</div><div class="v mono" id="sFinds">0</div></div>
+      <div class="stat"><div class="k">Pirate Tokens</div><div class="v mono" id="sTokens">0</div></div>
+    </div>
+  </header>
+
+  <div id="banner">
+    <div class="big">Pirate Token Found</div>
+    <p id="bannerText"></p>
+    <button id="shareTokBtn">Share this pull</button> <button id="continueBtn">Continue</button>
+  </div>
+
+  <div class="main">
+    <div>
+      <div class="box chest-area">
+        <h2>Chest <span>#<b class="mono" id="chestNo">1</b></span></h2>
+        <svg id="chest" viewBox="0 0 200 170" fill="none" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+          <rect x="30" y="75" width="140" height="80"/>
+          <line x1="55" y1="75" x2="55" y2="155"/>
+          <line x1="145" y1="75" x2="145" y2="155"/>
+          <rect x="88" y="88" width="24" height="26"/>
+          <circle cx="100" cy="100" r="3" fill="currentColor"/>
+          <g class="lid">
+            <path d="M30 72 L30 52 Q30 22 100 22 Q170 22 170 52 L170 72 Z"/>
+            <line x1="55" y1="30" x2="55" y2="72"/>
+            <line x1="145" y1="30" x2="145" y2="72"/>
+          </g>
+        </svg>
+        <div id="result"><div class="name">Ready</div><div class="sub">Press Space or click the chest</div></div>
+        <button class="primary" id="openBtn">Open chest</button>
+        <div class="row">
+          <button data-bulk="10">×10</button>
+          <button data-bulk="100">×100</button>
+          <button data-bulk="1000">×1K</button>
+          <button data-bulk="100000">×100K</button>
+        </div>
+      </div>
+
+      <div class="box" style="margin-top:20px">
+        <h2>Auto-open <span id="autoRate">off</span></h2>
+        <div class="row">
+          <button data-speed="5">5/s</button>
+          <button data-speed="50">50/s</button>
+          <button data-speed="1000">1K/s</button>
+          <button data-speed="50000">Max</button>
+        </div>
+        <label class="check"><input type="checkbox" id="stopToken" checked> Stop when a Pirate Token drops</label>
+        <label class="check"><input type="checkbox" id="stopAny"> Stop on any find</label>
+        <div class="row" style="margin-top:14px"><button id="shareBtn">Share my stats</button><button id="resetBtn">Reset everything</button></div>
+        <div class="hint">Shortcuts: <kbd>Space</kbd> open · <kbd>A</kbd> toggle auto · <kbd>Esc</kbd> stop</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="box">
+        <h2>Loot table <span>found vs. expected</span></h2>
+        <table>
+          <thead><tr><th>Item</th><th class="n">Odds</th><th class="n">Found</th><th class="n">Expected</th><th class="n">Since last</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="luck">
+          <div><div class="k">Chance of a token by now</div><div class="v mono" id="lTok">0%</div></div>
+          <div><div class="k">Avg chests per token</div><div class="v mono">137,500</div></div>
+          <div><div class="k">Gold coins</div><div class="v mono" id="lCoins">0</div></div>
+          <div><div class="k">Empty-handed rate</div><div class="v mono" id="lEmpty">—</div></div>
+        </div>
+      </div>
+
+      <div class="box" style="margin-top:20px">
+        <h2>Find history <span>non-coin drops</span></h2>
+        <ul id="log"><li><span style="color:var(--mute)">Nothing yet.</span></li></ul>
+      </div>
+    </div>
+  </div>
+  <footer>Fan-made simulator, not affiliated with Epic Games. Odds are 1-in-X per chest; anything else rolls gold coins. Progress saves in this browser.</footer>
+</div>
+
+<div id="toast"></div>
+<script>
+(() => {
+// odds r 1 in X
+const LOOT = [
+  { id: 'gold',    name: 'Weekly Gold Outfit',          odds: 1562500 },
+  { id: 'token',   name: 'Pirate Token',                odds: 137500, sub: 'Pirate Shop Access' },
+  { id: 'vehicle', name: 'Weekly Vehicle & Decal',      odds: 7813 },
+  { id: 'pickaxe', name: 'Weekly Pickaxe or Backbling', odds: 568 },
+  { id: 'jam',     name: 'Weekly Jam Track',            odds: 391 },
+  { id: 'loading', name: 'Weekly Loading Screen',       odds: 272 },
+  { id: 'sprite',  name: 'Sprite Gizmo',                odds: 127 },
+];
+const P_TOKEN = 1 / 137500;
+const SPRITES = ['Fire', 'Water', 'Earth', 'Air', 'Shadow', 'Light'];
+
+function roll() {
+  const r = Math.random(); let acc = 0;
+  for (const it of LOOT) { acc += 1 / it.odds; if (r < acc) return it; }
+  return null
+}
+
+const fresh = () => ({ opened: 0, coins: 0, empties: 0, counts: {}, last: {}, log: [] });
+let S = fresh();
+try { const s = JSON.parse(localStorage.getItem('pts2')); if (s && typeof s.opened === 'number') S = Object.assign(fresh(), s); } catch (e) {}
+LOOT.forEach(l => { S.counts[l.id] = S.counts[l.id] || 0; });
+let saveT; function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('pts2', JSON.stringify(S)); } catch (e) {} }, 300); }
+
+function openOne() {
+  S.opened++;
+  const it = roll();
+  if (!it) { const c = 5 + Math.floor(Math.random() * 46); S.coins += c; S.empties++; return { it: null, label: `${c} gold coins` }; }
+  S.counts[it.id]++; S.last[it.id] = S.opened;
+  let label = it.name;
+  if (it.id === 'pickaxe') label = Math.random() < .5 ? 'Weekly Pickaxe' : 'Weekly Backbling';
+  if (it.id === 'sprite') label = SPRITES[Math.floor(Math.random() * SPRITES.length)] + ' Sprite Gizmo';
+  S.log.unshift({ n: S.opened, id: it.id, label });
+  if (S.log.length > 200) S.log.length = 200;
+  return { it, label };
+}
+
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const chestEl = $('chest');
+
+function render() {
+  $('sOpened').textContent = fmt(S.opened);
+  $('sFinds').textContent = fmt(LOOT.reduce((a, l) => a + S.counts[l.id], 0));
+  $('sTokens').textContent = fmt(S.counts.token);
+  $('chestNo').textContent = fmt(S.opened + 1);
+  $('tbody').innerHTML = LOOT.map(l => {
+    const got = S.counts[l.id], exp = S.opened / l.odds;
+    const since = S.last[l.id] ? fmt(S.opened - S.last[l.id]) : (S.opened ? fmt(S.opened) : '—');
+    return `<tr class="${got ? 'got' : ''} ${l.id === 'token' ? 'token' : ''}">
+      <td><span class="dot"></span>${l.name}</td>
+      <td class="n mono">1/${fmt(l.odds)}</td>
+      <td class="n mono">${fmt(got)}</td>
+      <td class="n mono">${exp < 10 ? exp.toFixed(2) : fmt(exp)}</td>
+      <td class="n mono">${since}</td></tr>`;
+  }).join('');
+  const pt = 1 - Math.pow(1 - P_TOKEN, S.opened);
+  $('lTok').textContent = (pt * 100).toFixed(pt < .1 ? 3 : 1) + '%';
+  $('lCoins').textContent = fmt(S.coins);
+  $('lEmpty').textContent = S.opened ? (S.empties / S.opened * 100).toFixed(2) + '%' : '—';
+  $('log').innerHTML = S.log.length
+    ? S.log.slice(0, 60).map(e => `<li class="${e.id === 'token' ? 'tk' : ''}"><b>${e.label}</b><span class="mono">chest #${fmt(e.n)}</span></li>`).join('')
+    : '<li><span style="color:var(--mute)">Nothing yet.</span></li>';
+}
+
+function showResult(r, extra) {
+  const el = $('result');
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  const odds = r.it ? `1 in ${fmt(r.it.odds)}` : 'no drop this time';
+  el.innerHTML = `<div class="name">${r.label}</div><div class="sub">${extra || odds}</div>`;
+}
+
+function tokenFound(atChest) {
+  document.body.classList.add('token');
+  $('bannerText').textContent = `Dropped from chest #${fmt(atChest)}. Odds: 1 in 137,500. That's ${(atChest / 137500 * 100).toFixed(1)}% of the average wait.`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function clearToken() { document.body.classList.remove('token'); }
+
+let lidT;
+function animateChest() {
+  chestEl.classList.remove('shake'); void chestEl.offsetWidth; chestEl.classList.add('shake', 'open');
+  clearTimeout(lidT); lidT = setTimeout(() => chestEl.classList.remove('open'), 450);
+}
+
+function manualOpen() {
+  clearToken();
+  const r = openOne();
+  animateChest(); showResult(r);
+  if (r.it && r.it.id === 'token') tokenFound(S.opened);
+  render(); save();
+}
+
+function bulk(n) {
+  clearToken();
+  const got = {}; let tokenAt = 0;
+  for (let i = 0; i < n; i++) { const r = openOne(); if (r.it) { got[r.it.id] = (got[r.it.id] || 0) + 1; if (r.it.id === 'token' && !tokenAt) tokenAt = S.opened; } }
+  animateChest();
+  const parts = LOOT.filter(l => got[l.id]).map(l => `${got[l.id]}× ${l.name.replace('Weekly ', '')}`);
+  showResult({ it: null, label: `Opened ${fmt(n)} chests` }, parts.length ? parts.join(' · ') : 'only gold coins');
+  if (tokenAt) tokenFound(tokenAt);
+  render(); save();
+}
+
+let autoSpeed = 0, autoAcc = 0, lastT = 0, raf = null;
+function setAuto(speed) {
+  autoSpeed = autoSpeed === speed ? 0 : speed;
+  document.querySelectorAll('[data-speed]').forEach(b => b.classList.toggle('on', +b.dataset.speed === autoSpeed));
+  $('autoRate').textContent = autoSpeed ? (autoSpeed >= 50000 ? 'max' : autoSpeed.toLocaleString() + '/s') : 'off';
+  if (autoSpeed) { clearToken(); lastT = performance.now(); autoAcc = 0; if (!raf) raf = requestAnimationFrame(tick); }
+}
+function tick(t) {
+  raf = null; if (!autoSpeed) return;
+  const dt = Math.min(.25, (t - lastT) / 1000); lastT = t;
+  autoAcc += autoSpeed * dt;
+  let n = Math.floor(autoAcc); autoAcc -= n;
+  let lastR = null, stop = false;
+  for (let i = 0; i < n; i++) {
+    const r = openOne(); lastR = r;
+    if (r.it && r.it.id === 'token' && $('stopToken').checked) { stop = true; tokenFound(S.opened); break; }
+    if (r.it && $('stopAny').checked) { stop = true; break; }
+    if (r.it && r.it.id === 'token') tokenFound(S.opened);
+  }
+  if (lastR) { if (autoSpeed <= 50 || stop) { animateChest(); showResult(lastR); } render(); save(); }
+  if (stop) { setAuto(autoSpeed); return; }
+  raf = requestAnimationFrame(tick);
+}
+
+
+function shareText() {
+  const finds = LOOT.filter(l => S.counts[l.id]).map(l => `${l.id === 'token' ? '★' : '•'} ${S.counts[l.id]}× ${l.name}`);
+  const pt = 1 - Math.pow(1 - P_TOKEN, S.opened);
+  return [
+    '☠ PIRATE TOKEN SIMULATOR',
+    `Chests opened: ${fmt(S.opened)}`,
+    `Pirate Tokens: ${fmt(S.counts.token)}${S.counts.token ? ' 🟨' : ''}`,
+    ...(finds.length ? finds : ['• nothing but gold coins 💀']),
+    `Gold coins: ${fmt(S.coins)}`,
+    `Chance I'd have a token by now: ${(pt * 100).toFixed(pt < .1 ? 3 : 1)}%`,
+    '',
+    location.protocol.startsWith('http') && !location.hostname.endsWith('claude.ai') ? location.href.split('#')[0] : ''
+  ].join('\n').trim();
+}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
+function legacyCopy(text) {
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); return ok;
+}
+async function share() {
+  const text = shareText();
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text); toast('Stats copied, paste them anywhere'); }
+  catch (e) { toast(legacyCopy(text) ? 'Stats copied, paste them anywhere' : 'Couldn\'t copy, your browser blocked it'); }
+}
+$('shareBtn').onclick = share;
+$('shareTokBtn').onclick = share;
+
+$('openBtn').onclick = manualOpen;
+chestEl.onclick = manualOpen;
+document.querySelectorAll('[data-bulk]').forEach(b => b.onclick = () => bulk(+b.dataset.bulk));
+document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => setAuto(+b.dataset.speed));
+$('continueBtn').onclick = clearToken;
+let resetArm = false;
+$('resetBtn').onclick = () => {
+  if (!resetArm) { resetArm = true; $('resetBtn').textContent = 'Click again to confirm'; setTimeout(() => { resetArm = false; $('resetBtn').textContent = 'Reset everything'; }, 2500); return; }
+  resetArm = false; $('resetBtn').textContent = 'Reset everything';
+  if (autoSpeed) setAuto(autoSpeed);
+  S = fresh(); LOOT.forEach(l => S.counts[l.id] = 0); clearToken();
+  $('result').innerHTML = '<div class="name">Ready</div><div class="sub">Press Space or click the chest</div>';
+  render(); save();
+};
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); manualOpen(); }
+  else if (e.code === 'KeyA') setAuto(autoSpeed || 50);
+  else if (e.code === 'Escape') { if (autoSpeed) setAuto(autoSpeed); clearToken(); }
+});
+document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
+render();
+})();
+</script>
+</body>
+</html>
