@@ -5,15 +5,17 @@ pirate token chest simulator. open chests, see if u get the token lol. site goes
 
 play: https://apollosense.github.io/fortnitetokenfinder/
 
-odds per chest:
-- gold outfit 1/1,562,500
-- pirate token (shop access) 1/137,500
-- vehicle & decal 1/7,813
-- pickaxe/backbling 1/568
-- jam track 1/391
-- loading screen 1/272
-- sprite gizmo 1/127
+odds per chest (treasure hunters):
+- weekly gold outfit 1/1,562,500
+- pirate token (pirate shop access) 1/137,500
+- weekly vehicle + decal 1/7,813
+- weekly pickaxe/back bling 1/568
+- weekly jam track 1/391
+- weekly loading screen 1/272
+- gizmo 1/127
 - everything else = gold coins
+
+has the real items for each week (week 1 a$ap rocky, week 2 lil uzi). picks the current week automatically
 
 space to open, A for auto. progress saves in ur browser
 

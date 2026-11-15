@@ -10,7 +10,24 @@ const LOOT = [
   { id: 'sprite',  name: 'Sprite Gizmo',                odds: 127 },
 ];
 const P_TOKEN = 1 / 137500;
-const GIZMOS = ['Portable Extractor', 'Cheat Code Locator', 'Extraction Accelerator', 'Llama Supply Drop', 'Spicy Taco'];
+const GIZMOS = ['Portable Extractor', 'Extraction Accelerator', 'Sprite Locator', 'Lucky Locator', 'Golden Firework'];
+
+// weekly pool, rotates sundays 9pm ET (02:00 UTC monday)
+const WEEKS = [
+  { n: 1, start: '2026-11-01T00:00:00Z', items: {
+    gold: 'Solid Gold A$AP Rocky', vehicle: "Mercedes-AMG G 63 'G-Wagon' + Golden Llama Crew decal",
+    pickaxe: "Solid Gold A$AP Rocky's Gauntlets", jam: "'No Trespassing' by A$AP Rocky", loading: 'Plunder in Paradise' }, slot: 'Pickaxe' },
+  { n: 2, start: '2026-11-09T02:00:00Z', items: {
+    gold: "Solid Gold Lil' Uzi Vert", vehicle: 'Cadillac CT5-V Blackwing + Golden Llama Crew decal',
+    pickaxe: 'Diamond and Gold', jam: "'London' by Lil' Uzi Vert", loading: 'So Kawaii' }, slot: 'Back Bling' },
+  { n: 3, start: '2026-11-16T02:00:00Z', items: null },
+  { n: 4, start: '2026-11-23T02:00:00Z', items: null },
+  { n: 5, start: '2026-11-30T02:00:00Z', items: null },
+];
+const TYPES = { gold: 'Outfit', vehicle: 'Vehicle', pickaxe: 'Pickaxe / Back Bling', jam: 'Jam Track', loading: 'Loading Screen', token: 'Item Shop token', sprite: 'Gizmo' };
+const now = Date.now();
+let week = WEEKS.filter(w => Date.parse(w.start) <= now).pop() || WEEKS[0];
+const nm = l => (week.items && week.items[l.id]) || l.name;
 
 function roll() {
   const r = Math.random(); let acc = 0;
@@ -29,8 +46,7 @@ function openOne() {
   const it = roll();
   if (!it) { const c = 5 + Math.floor(Math.random() * 46); S.coins += c; S.empties++; return { it: null, label: `${c} gold coins` }; }
   S.counts[it.id]++; S.last[it.id] = S.opened;
-  let label = it.name;
-  if (it.id === 'pickaxe') label = Math.random() < .5 ? 'Weekly Pickaxe' : 'Weekly Backbling';
+  let label = nm(it);
   if (it.id === 'sprite') label = GIZMOS[Math.floor(Math.random() * GIZMOS.length)] + ' (Gizmo)';
   S.log.unshift({ n: S.opened, id: it.id, label });
   if (S.log.length > 200) S.log.length = 200;
@@ -50,7 +66,7 @@ function render() {
     const got = S.counts[l.id], exp = S.opened / l.odds;
     const since = S.last[l.id] ? fmt(S.opened - S.last[l.id]) : (S.opened ? fmt(S.opened) : '—');
     return `<tr class="${got ? 'got' : ''} ${l.id === 'token' ? 'token' : ''}">
-      <td><span class="dot"></span>${l.name}</td>
+      <td><span class="dot"></span>${nm(l)}${l.id === 'token' ? ' ★' : ''}<small class="type">${l.id === 'token' ? 'Pirate Shop Access' : (l.id === 'pickaxe' && week.slot ? week.slot : week.items || l.id === 'sprite' ? TYPES[l.id] : 'not revealed yet')}</small></td>
       <td class="n mono">1/${fmt(l.odds)}</td>
       <td class="n mono">${fmt(got)}</td>
       <td class="n mono">${exp < 10 ? exp.toFixed(2) : fmt(exp)}</td>
@@ -98,7 +114,7 @@ function bulk(n) {
   const got = {}; let tokenAt = 0;
   for (let i = 0; i < n; i++) { const r = openOne(); if (r.it) { got[r.it.id] = (got[r.it.id] || 0) + 1; if (r.it.id === 'token' && !tokenAt) tokenAt = S.opened; } }
   animateChest();
-  const parts = LOOT.filter(l => got[l.id]).map(l => `${got[l.id]}× ${l.name.replace('Weekly ', '')}`);
+  const parts = LOOT.filter(l => got[l.id]).map(l => `${got[l.id]}× ${nm(l)}`);
   showResult({ it: null, label: `Opened ${fmt(n)} chests` }, parts.length ? parts.join(' · ') : 'only gold coins');
   if (tokenAt) tokenFound(tokenAt);
   render(); save();
@@ -130,10 +146,10 @@ function tick(t) {
 
 
 function shareText() {
-  const finds = LOOT.filter(l => S.counts[l.id]).map(l => `${l.id === 'token' ? '★' : '•'} ${S.counts[l.id]}× ${l.name}`);
+  const finds = LOOT.filter(l => S.counts[l.id]).map(l => `${l.id === 'token' ? '★' : '•'} ${S.counts[l.id]}× ${nm(l)}`);
   const pt = 1 - Math.pow(1 - P_TOKEN, S.opened);
   return [
-    '☠ PIRATE TOKEN SIMULATOR',
+    '☠ PIRATE TOKEN SIMULATOR (week ' + week.n + ')',
     `Chests opened: ${fmt(S.opened)}`,
     `Pirate Tokens: ${fmt(S.counts.token)}${S.counts.token ? ' 🟨' : ''}`,
     ...(finds.length ? finds : ['• nothing but gold coins 💀']),
@@ -177,6 +193,10 @@ addEventListener('keydown', e => {
   else if (e.code === 'KeyA') setAuto(autoSpeed || 50);
   else if (e.code === 'Escape') { if (autoSpeed) setAuto(autoSpeed); clearToken(); }
 });
+const ws = $('weekSel');
+ws.innerHTML = WEEKS.map(w => `<option value="${w.n}" ${Date.parse(w.start) > now ? 'disabled' : ''}>Week ${w.n}${w === week ? ' (now)' : ''}${Date.parse(w.start) > now ? ' (soon)' : ''}</option>`).join('');
+ws.value = week.n;
+ws.onchange = () => { week = WEEKS.find(w => w.n === +ws.value); render(); };
 document.addEventListener('click', e => { const b = e.target.closest('button'); if (b) b.blur(); });
 render();
 })();
