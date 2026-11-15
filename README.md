@@ -15,6 +15,8 @@ odds per chest (treasure hunters):
 - gizmo 1/127
 - everything else = gold coins
 
+cosmetics + the token are one time, u cant get dupes. only gizmos stack
+
 has the real items for each week (week 1 a$ap rocky, week 2 lil uzi). picks the current week automatically
 
 space to open, A for auto. progress saves in ur browser

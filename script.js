@@ -35,19 +35,23 @@ function roll() {
   return null
 }
 
-const fresh = () => ({ opened: 0, coins: 0, empties: 0, counts: {}, last: {}, log: [] });
+const fresh = () => ({ opened: 0, coins: 0, empties: 0, got: {}, giz: 0, lastGiz: 0, log: [] });
 let S = fresh();
-try { const s = JSON.parse(localStorage.getItem('pts2')); if (s && typeof s.opened === 'number') S = Object.assign(fresh(), s); } catch (e) {}
-LOOT.forEach(l => { S.counts[l.id] = S.counts[l.id] || 0; });
-let saveT; function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('pts2', JSON.stringify(S)); } catch (e) {} }, 300); }
+try { const s = JSON.parse(localStorage.getItem('pts3')); if (s && typeof s.opened === 'number') S = Object.assign(fresh(), s); } catch (e) {}
+let saveT; function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('pts3', JSON.stringify(S)); } catch (e) {} }, 300); }
+
+// cosmetics + token are one time unlocks, only gizmos stack
+const key = l => l.id === 'token' ? 'token' : week.n + ':' + l.id;
+const owned = l => l.id !== 'sprite' && S.got[key(l)];
 
 function openOne() {
   S.opened++;
-  const it = roll();
+  let it = roll();
+  if (it && owned(it)) it = null; // already have it, no dupes
   if (!it) { const c = 5 + Math.floor(Math.random() * 46); S.coins += c; S.empties++; return { it: null, label: `${c} gold coins` }; }
-  S.counts[it.id]++; S.last[it.id] = S.opened;
   let label = nm(it);
-  if (it.id === 'sprite') label = GIZMOS[Math.floor(Math.random() * GIZMOS.length)] + ' (Gizmo)';
+  if (it.id === 'sprite') { S.giz++; S.lastGiz = S.opened; label = GIZMOS[Math.floor(Math.random() * GIZMOS.length)] + ' (Gizmo)'; }
+  else S.got[key(it)] = S.opened;
   S.log.unshift({ n: S.opened, id: it.id, label });
   if (S.log.length > 200) S.log.length = 200;
   return { it, label };
@@ -58,22 +62,24 @@ const fmt = n => Math.round(n).toLocaleString('en-US');
 const chestEl = $('chest');
 
 function render() {
+  const cos = LOOT.filter(l => l.id !== 'sprite');
   $('sOpened').textContent = fmt(S.opened);
-  $('sFinds').textContent = fmt(LOOT.reduce((a, l) => a + S.counts[l.id], 0));
-  $('sTokens').textContent = fmt(S.counts.token);
+  $('sFinds').textContent = cos.filter(owned).length + '/' + cos.length;
+  $('sTokens').textContent = S.got.token ? 'YES' : 'NO';
   $('chestNo').textContent = fmt(S.opened + 1);
   $('tbody').innerHTML = LOOT.map(l => {
-    const got = S.counts[l.id], exp = S.opened / l.odds;
-    const since = S.last[l.id] ? fmt(S.opened - S.last[l.id]) : (S.opened ? fmt(S.opened) : '—');
-    return `<tr class="${got ? 'got' : ''} ${l.id === 'token' ? 'token' : ''}">
-      <td><span class="dot"></span>${nm(l)}${l.id === 'token' ? ' ★' : ''}<small class="type">${l.id === 'token' ? 'Pirate Shop Access' : (l.id === 'pickaxe' && week.slot ? week.slot : week.items || l.id === 'sprite' ? TYPES[l.id] : 'not revealed yet')}</small></td>
+    const giz = l.id === 'sprite', at = owned(l);
+    const chance = 1 - Math.pow(1 - 1 / l.odds, S.opened);
+    const gotCell = giz ? fmt(S.giz) + '×' : at ? '✓ #' + fmt(at) : '—';
+    const lastCell = giz ? (S.lastGiz ? fmt(S.opened - S.lastGiz) + ' ago' : '—') : at ? 'unlocked' : (chance * 100).toFixed(chance < .01 ? 3 : 1) + '%';
+    return `<tr class="${at || (giz && S.giz) ? 'got' : ''} ${l.id === 'token' ? 'token' : ''}">
+      <td><span class="dot"></span>${nm(l)}${l.id === 'token' ? ' ★' : ''}<small class="type">${l.id === 'token' ? 'Pirate Shop Access · once' : giz ? 'Gizmo · stacks' : (l.id === 'pickaxe' && week.slot ? week.slot : week.items ? TYPES[l.id] : 'not revealed yet') + ' · once'}</small></td>
       <td class="n mono">1/${fmt(l.odds)}</td>
-      <td class="n mono">${fmt(got)}</td>
-      <td class="n mono">${exp < 10 ? exp.toFixed(2) : fmt(exp)}</td>
-      <td class="n mono">${since}</td></tr>`;
+      <td class="n mono">${gotCell}</td>
+      <td class="n mono">${lastCell}</td></tr>`;
   }).join('');
   const pt = 1 - Math.pow(1 - P_TOKEN, S.opened);
-  $('lTok').textContent = (pt * 100).toFixed(pt < .1 ? 3 : 1) + '%';
+  $('lTok').textContent = S.got.token ? 'got it ✓' : (pt * 100).toFixed(pt < .1 ? 3 : 1) + '%';
   $('lCoins').textContent = fmt(S.coins);
   $('lEmpty').textContent = S.opened ? (S.empties / S.opened * 100).toFixed(2) + '%' : '—';
   $('log').innerHTML = S.log.length
@@ -146,15 +152,16 @@ function tick(t) {
 
 
 function shareText() {
-  const finds = LOOT.filter(l => S.counts[l.id]).map(l => `${l.id === 'token' ? '★' : '•'} ${S.counts[l.id]}× ${nm(l)}`);
+  const finds = LOOT.filter(owned).map(l => `${l.id === 'token' ? '★' : '✓'} ${nm(l)} (chest #${fmt(owned(l))})`);
+  if (S.giz) finds.push(`• ${S.giz}× gizmos`);
   const pt = 1 - Math.pow(1 - P_TOKEN, S.opened);
   return [
     '☠ PIRATE TOKEN SIMULATOR (week ' + week.n + ')',
     `Chests opened: ${fmt(S.opened)}`,
-    `Pirate Tokens: ${fmt(S.counts.token)}${S.counts.token ? ' 🟨' : ''}`,
+    `Pirate Token: ${S.got.token ? 'GOT IT 🟨' : 'not yet'}`,
     ...(finds.length ? finds : ['• nothing but gold coins 💀']),
     `Gold coins: ${fmt(S.coins)}`,
-    `Chance I'd have a token by now: ${(pt * 100).toFixed(pt < .1 ? 3 : 1)}%`,
+    ...(S.got.token ? [] : [`Chance I'd have a token by now: ${(pt * 100).toFixed(pt < .1 ? 3 : 1)}%`]),
     '',
     location.protocol.startsWith('http') && !location.hostname.endsWith('claude.ai') ? location.href.split('#')[0] : ''
   ].join('\n').trim();
@@ -183,7 +190,7 @@ $('resetBtn').onclick = () => {
   if (!resetArm) { resetArm = true; $('resetBtn').textContent = 'Click again to confirm'; setTimeout(() => { resetArm = false; $('resetBtn').textContent = 'Reset everything'; }, 2500); return; }
   resetArm = false; $('resetBtn').textContent = 'Reset everything';
   if (autoSpeed) setAuto(autoSpeed);
-  S = fresh(); LOOT.forEach(l => S.counts[l.id] = 0); clearToken();
+  S = fresh(); clearToken();
   $('result').innerHTML = '<div class="name">Ready</div><div class="sub">Press Space or click the chest</div>';
   render(); save();
 };
