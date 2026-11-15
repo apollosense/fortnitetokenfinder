@@ -10,7 +10,7 @@ const LOOT = [
   { id: 'sprite',  name: 'Sprite Gizmo',                odds: 127 },
 ];
 const P_TOKEN = 1 / 137500;
-const SPRITES = ['Fire', 'Water', 'Earth', 'Air', 'Shadow', 'Light'];
+const GIZMOS = ['Portable Extractor', 'Cheat Code Locator', 'Extraction Accelerator', 'Llama Supply Drop', 'Spicy Taco'];
 
 function roll() {
   const r = Math.random(); let acc = 0;
@@ -31,7 +31,7 @@ function openOne() {
   S.counts[it.id]++; S.last[it.id] = S.opened;
   let label = it.name;
   if (it.id === 'pickaxe') label = Math.random() < .5 ? 'Weekly Pickaxe' : 'Weekly Backbling';
-  if (it.id === 'sprite') label = SPRITES[Math.floor(Math.random() * SPRITES.length)] + ' Sprite Gizmo';
+  if (it.id === 'sprite') label = GIZMOS[Math.floor(Math.random() * GIZMOS.length)] + ' (Gizmo)';
   S.log.unshift({ n: S.opened, id: it.id, label });
   if (S.log.length > 200) S.log.length = 200;
   return { it, label };
