@@ -1,4 +1,5 @@
 # fortnitetokenfinder
+test ur luck
 
 pirate token chest simulator. open chests, see if u get the token lol. site goes yellow when u pull it
 
